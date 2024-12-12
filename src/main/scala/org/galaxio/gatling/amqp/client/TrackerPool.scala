@@ -1,9 +1,8 @@
 package org.galaxio.gatling.amqp.client
 
-import akka.actor.ActorSystem
 import com.rabbitmq.client.Delivery
 import io.gatling.commons.util.Clock
-import io.gatling.core.config.GatlingConfiguration
+import io.gatling.core.actor.ActorSystem
 import io.gatling.core.stats.StatsEngine
 import io.gatling.core.util.NameGen
 import org.galaxio.gatling.amqp.action.AmqpLogging
@@ -17,8 +16,7 @@ class TrackerPool(
     pool: AmqpConnectionPool,
     system: ActorSystem,
     statsEngine: StatsEngine,
-    clock: Clock,
-    configuration: GatlingConfiguration,
+    clock: Clock
 ) extends AmqpLogging with NameGen {
 
   private val trackers = new ConcurrentHashMap[String, AmqpMessageTracker]
@@ -33,7 +31,7 @@ class TrackerPool(
       sourceQueue,
       _ => {
         val actor =
-          system.actorOf(AmqpMessageTrackerActor.props(statsEngine, clock), genName("amqpTrackerActor"))
+          system.actorOf(new AmqpMessageTrackerActor(genName("amqpTrackerActor"), statsEngine, clock))
 
         for (_ <- 1 to listenerThreadCount) {
           val consumerChannel = pool.createConsumerChannel
@@ -59,6 +57,6 @@ class TrackerPool(
         }
 
         new AmqpMessageTracker(actor)
-      },
+      }
     )
 }
